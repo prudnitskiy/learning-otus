@@ -1,0 +1,52 @@
+name: 'CI flow'
+run-name: "Python CI ${{ inputs.working-directory }}"
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: Python version
+        type: string
+        default: "3.10"
+      working-directory:
+        description: Working directory to use
+        type: string
+        default: './'
+
+jobs:
+  python_ci:
+    runs-on: ubuntu-latest
+    name: "Python CI ${{ inputs.working-directory }}"
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python ${{ inputs.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install flake8 pytest mypy
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+    - name: Lint with flake8
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
+
+    - name: Upload coverage to Codecov
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      if: ${{ env.CODECOV_TOKEN }}
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: coverage.xml
+        name: ${{ matrix.os }}, python ${{ inputs.python-version }}
+
+    - name: Check types with mypy
+      run: mypy ./
