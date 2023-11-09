@@ -1,0 +1,12 @@
+name: Logs CI
+on:
+  push:
+    paths:
+      - '01-log/**'
+
+jobs:
+  python_ci:
+    uses: prudnitskiy/learning-otus/.github/workflows/python-template.yml@master
+    secrets: inherit
+    with:
+      working-directory: ./01-log
